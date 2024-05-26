@@ -2,11 +2,6 @@
 Improving Speech Translation with Dual-encoder Progressive Alignment
 [[Back]](..)
 
-# Joint Speech Text Training for the MuST-C English to German Speech Translation task
-
-Joint Training Baseline: it is based on paper ["A general multi-task learning framework to leverage text data for speech to text tasks"](https://arxiv.org/pdf/2010.11338.pdf)
-
-Enhanced Joint Training: the joint training is enhanced with pre-trained models, cross attentive regularization and online knowledge distillation based on paper ["Improving Speech Translation by Understanding and Learning from the Auxiliary Text Translation Task"](https://research.fb.com/publications/improving-speech-translation-by-understanding-and-learning-from-the-auxiliary-text-translation-task)
 
 ## Prepare Data
 #### Download files
