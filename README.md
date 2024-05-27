@@ -11,8 +11,8 @@ Insert speech_text_ms_joint_to_text into the examples directory of fairseq, and 
 ## Prepare Data
 #### Prepare MuST-C data set
 -   Please follow the data preparation in the [S2T example](https://github.com/pytorch/fairseq/blob/main/examples/speech_to_text/docs/mustc_example.md)
--   Convert source text to its char representation and place it in the "src_char_text" column of TSV file
--   Convert source text to its phoneme representation and place it in the "src_text" column of TSV file
+-   Generate char text from source text and place it in the "src_char_text" column of TSV file
+-   Generate phoneme text from source text and place it in the "src_phone_text" column of TSV file
 -   Place the source text in the "src_word_text" column of TSV file
 -   Apply MFA for forced alignment and record the alignment information in JSON format under the 'speech_text_align' column in the TSV file.
 A snapshot of the final TSV file is shown below:
@@ -23,93 +23,93 @@ ted_1_1	/mnt/zhangrunlai/mustc/en-de/fbank80.zip:16042387858:438208	1369	Haben S
 ted_1_2	/mnt/zhangrunlai/mustc/en-de/fbank80.zip:36784304945:142208	444	Es war Zeit zum Abendessen und wir hielten Ausschau nach einem Restaurant.	spk.1	It was dinnertime, and we started looking for a place to eat.	i t | w a s | d i n n e r t i m e , | a n d | w e | s t a r t e d | l o o k i n g | f o r | a | p l a c e | t o | e a t .	▁IH1 T ▁W AA1 Z ▁D IH1 N ER0 T AY2 M ▁AH0 N D ▁W IY1 ▁S T AA1 R T AH0 D ▁L UH1 K IH0 NG ▁F AO1 R ▁AH0 ▁P L EY1 S ▁T UW1 ▁IY1 T	{"align_spch": [[0.0, 0.15], [0.15, 0.5], [0.5, 1.21], [1.77, 2.46], [2.95, 3.1], [3.1, 3.39], [3.39, 3.63], [3.63, 3.72], [3.72, 3.75], [3.75, 4.04], [4.04, 4.12], [4.12, 4.46]], "align_txt": [[0, 2], [2, 5], [5, 12], [12, 15], [15, 17], [17, 24], [24, 29], [29, 32], [32, 33], [33, 37], [37, 39], [39, 41]], "word_token": [[18], [23], [2159, 1164], [12], [19], [218], [292], [24], [11], [247], [8], [879]]}
 ted_1_3	/mnt/zhangrunlai/mustc/en-de/fbank80.zip:13995182400:17088	53	Wir waren auf der I-40.	spk.1	We were on I-40.	w e | w e r e | o n | i - 4 0 .	▁W IY1 ▁W ER0 ▁AA1 N ▁AY1 ▁F AO1 R T IY0	{"align_spch": [[0.0, 0.06], [0.06, 0.23], [0.23, 0.34], [0.34, 0.49], [0.49, 0.55]], "align_txt": [[0, 2], [2, 4], [4, 6], [6, 7], [7, 12]], "word_token": [[19], [87], [28], [3380], [909]]}
 ```
+Note that in speech_text_align, "align_spch" represents the word segmentation boundaries of the source speech, "align_txt" represents the phoneme segmentation boundaries of the source speech, and "word_token" represents the subword indices in the vocabulary after the word has been tokenized using SentencePiece.
 
-```
--   Prepare phoneme dictionary and save to $MANIFEST_ROOT as [src_dict.txt](https://dl.fbaipublicfiles.com/joint_speech_text_4_s2t/must_c/en_de/src_dict.txt)
+
+
 #### Prepare WMT text data
--   [Download wmt data](https://github.com/pytorch/fairseq/blob/main/examples/translation/prepare-wmt14en2de.sh)
--   Convert source text (English) into phoneme representation as above
--   Generate binary parallel files with "fairseq-preprocess" from fairseq for training and validation. The source input is English phoneme representation and the target input is German sentencepiece token .  The output is saved under $parallel_text_data
+-   Please follow the data preparation in [WMT example](https://github.com/pytorch/fairseq/blob/main/examples/translation/prepare-wmt14en2de.sh)
+-   Generate phoneme text from source text
+-   Generate binary parallel files with "fairseq-preprocess" from fairseq for training and validation. The source input is English phoneme representation, the word text for auxiliary CTC is source text, the target is German sentencepiece token.  The output is saved under $parallel_text_data
+
+A snapshot of the final binary file directory is shown below:
+```
+dict.de.txt dict_p.en.txt train.en-de.de.idx train.en-de.en.idx train.p.en.idx valid.en-de.de.idx valid.en-de.en.idx valid.p.en.idx dict.en.txt train.en-de.de.bin train.en-de.en.bin train.p.en.bin valid.en-de.de.bin valid.en-de.en.bin valid.p.en.bin
+```
 
 ## Training
-The model is trained with 8 v100 GPUs.
+The model is trained with 2 RTX 3090 or 2 TITAN RTX, If you use a different number of GPUs for training, you might need to adjust the training hyperparameters.
 
-#### Download pretrained models
--    [pretrain_encoder](https://dl.fbaipublicfiles.com/fairseq/s2t/mustc_joint_asr_transformer_m.pt)
--    [pretrain_nmt](https://dl.fbaipublicfiles.com/joint_speech_text_4_s2t/must_c/en_de/checkpoint_mt.pt)
-
-#### Training scripts
-- Jointly trained model from scratch
+#### PDE-base training
 ```bash
-python train.py ${MANIFEST_ROOT} \
+CUDA_VISIBLE_DEVICES=0,1 python train.py ${MANIFEST_ROOT} \
     --save-dir ${save_dir} \
+    --train-subset train_ende_clean \
+    --valid-subset valid \
     --num-workers 8 \
-    --task speech_text_joint_to_text \
-    --arch dualinputs2ttransformer_s \
-    --user-dir examples/speech_text_joint_to_text \
-    --max-epoch 100 --update-mix-data \
+    --task speech_text_ms_joint_to_text \
+    --arch dualinputs2tmstransformer_m \
+    --user-dir examples/speech_text_ms_joint_to_text \
+    --max-epoch 80 --update-mix-data \
     --optimizer adam --lr-scheduler inverse_sqrt \
-    --lr 0.001 --update-freq 4 --clip-norm 10.0 \
-    --criterion guided_label_smoothed_cross_entropy_with_accuracy \
-    --label-smoothing 0.1 --max-tokens 10000 --max-tokens-text 10000 \
-    --max-positions-text 400 --seed 2 --speech-encoder-layers 12 \
-    --text-encoder-layers 6 --encoder-shared-layers 6 --decoder-layers 6 \
-    --dropout 0.1 --warmup-updates 20000  \
-    --text-sample-ratio 0.25 --parallel-text-data ${parallel_text_data} \
-    --text-input-cost-ratio 0.5 --enc-grad-mult 2.0 --add-speech-eos \
-    --log-format json --langpairs en-de --noise-token '"'"'▁NOISE'"'"' \
-    --mask-text-ratio 0.0 --max-tokens-valid 20000 --ddp-backend no_c10d \
-    --log-interval 100 --data-buffer-size 50 --config-yaml config.yaml \
-    --keep-last-epochs 10
-```
-- Jointly trained model with good initialization, cross attentive loss and online knowledge distillation
-```bash
-python train.py ${MANIFEST_ROOT} \
-    --save-dir ${save_dir} \
-    --num-workers 8 \
-    --task speech_text_joint_to_text \
-    --arch dualinputs2ttransformer_m \
-    --user-dir examples/speech_text_joint_to_text \
-    --max-epoch 100 --update-mix-data \
-    --optimizer adam --lr-scheduler inverse_sqrt \
-    --lr 0.002 --update-freq 4 --clip-norm 10.0 \
-    --criterion guided_label_smoothed_cross_entropy_with_accuracy \
+    --lr 0.002 --update-freq 16 --clip-norm 10.0 \
+    --criterion guided_label_smoothed_cross_entropy_with_accuracy_with_ctc_with_ctr \
     --guide-alpha 0.8 --disable-text-guide-update-num 5000 \
     --label-smoothing 0.1 --max-tokens 10000 --max-tokens-text 10000 \
     --max-positions-text 400 --seed 2 --speech-encoder-layers 12 \
-    --text-encoder-layers 6 --encoder-shared-layers 6 --decoder-layers 6 \
-    --dropout 0.1 --warmup-updates 20000 --attentive-cost-regularization 0.02 \
+    --text-encoder-layers 7 --encoder-shared-layers 6 --decoder-layers 6 \
+    --dropout 0.1 --warmup-updates 20000 \
     --text-sample-ratio 0.25 --parallel-text-data ${parallel_text_data} \
     --text-input-cost-ratio 0.5 --enc-grad-mult 2.0 --add-speech-eos \
     --log-format json --langpairs en-de --noise-token '"'"'▁NOISE'"'"' \
     --mask-text-ratio 0.0 --max-tokens-valid 20000 --ddp-backend no_c10d \
-    --log-interval 100 --data-buffer-size 50 --config-yaml config.yaml \
-    --load-pretrain-speech-encoder ${pretrain_encoder} \
-    --load-pretrain-decoder ${pretrain_nmt} \
-    --load-pretrain-text-encoder-last ${pretrain_nmt} \
-    --keep-last-epochs 10
+    --log-interval 100 --data-buffer-size 50 --config-yaml config_ms_cpw.yaml \
+    --fp16 \
+    --ctc-weight 0.2 \
+    --load-pretrain-decoder ${pretrain_ms_nmt} \
+    --load-pretrain-text-encoder-last ${pretrain_ms_nmt} \
+    --use-word-ctc \
+    --use-src-word-ctc \
+    --use-phone-ctc \
+    --use-char-ctc \
+    --word-subsample-layer 6 \
+    --phone-subsample-layer 5 \
+    --char-subsample-layer 3 \
+    --src-word-subsample-layer 1 \
+    --tgt-word-subsample-layer 0 \
+    --contrastive-weight-phone 0 \
+    --contrastive-weight-word 0 \
+    --mixup-rate-word 0 \
+    --mixup-rate-phone 0 \
+    --keep-last-epochs 20
 ```
+- To train PDE-base-mixup, set the parameter --mixup-rate-phone to 0.4. 
+- To train a model with the large configuration, modify the following parameters:
 
+```bash
+    --speech-encoder-layers 24 \
+    --word-subsample-layer 18 \
+    --phone-subsample-layer 15 \
+    --char-subsample-layer 9 \
+```
 ## Evaluation
 ```bash
-python ./fairseq_cli/generate.py \
+python generate.py \
         ${MANIFEST_ROOT} \
-        --task speech_text_joint_to_text \
-        --max-tokens 25000 \
+        --task speech_text_ms_joint_to_text \
+        --max-tokens 30000 \
         --nbest 1 \
-        --results-path ${infer_results} \
+        --results-path ${LOG_DIRECTORY} \
         --batch-size 512 \
         --path ${model} \
         --gen-subset tst-COMMON_st \
-        --config-yaml config.yaml \
+        --config-yaml config_ms_cpw.yaml \
         --scoring sacrebleu \
         --beam 5 --lenpen 1.0 \
-        --user-dir examples/speech_text_joint_to_text \
-        --load-speech-only
+        --user-dir examples/speech_text_ms_joint_to_text \
+        --load-speech-only \
+        --use-src-word-ctc \
+        --use-word-ctc \
+        --use-phone-ctc \
+        --use-char-ctc \
 ```
-
-## Results (Joint training with initialization + CAR + online KD)
-|Direction|En-De | En-Es | En-Fr |
-|---|---|---|---|
-|BLEU|27.4| 31.2 | 37.6 |
-|checkpoint | [link](https://dl.fbaipublicfiles.com/joint_speech_text_4_s2t/must_c/en_de/checkpoint_ave_10.pt) |[link](https://dl.fbaipublicfiles.com/joint_speech_text_4_s2t/must_c/en_es/checkpoint_ave_10.pt)|[link](https://dl.fbaipublicfiles.com/joint_speech_text_4_s2t/must_c/en_fr/checkpoint_ave_10.pt)|
