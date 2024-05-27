@@ -2,6 +2,10 @@
 Improving End-to-End Speech Translation with Progressive Dual-encoding
 
 ## install
+We conducted our experiments on fairseq-0.12.2. To install faiseq, run:
+```
+pip install fairseq
+```
 
 
 ## Prepare Data
