@@ -6,6 +6,7 @@ We conducted our experiments on fairseq-0.12.2. To install the dependencies requ
 ```
 pip install -r requirements.txt
 ```
+Insert speech_text_ms_joint_to_text into the examples directory of fairseq, and then move the examples directory to the same directory level as fairseq.
 
 ## Prepare Data
 #### Prepare MuST-C data set
