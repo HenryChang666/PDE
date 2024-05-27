@@ -2,11 +2,10 @@
 Improving End-to-End Speech Translation with Progressive Dual-encoding
 
 ## install
-We conducted our experiments on fairseq-0.12.2. To install faiseq, run:
+We conducted our experiments on fairseq-0.12.2. To install the dependencies required for the experiment, run the following command:
 ```
-pip install fairseq
+pip install -r requirements.txt
 ```
-
 
 ## Prepare Data
 #### Prepare MuST-C data set
