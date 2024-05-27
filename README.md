@@ -1,24 +1,16 @@
 # DPA
-Improving Speech Translation with Dual-encoder Progressive Alignment
-[[Back]](..)
+Improving End-to-End Speech Translation with Progressive Dual-encoding
+
+## install
 
 
 ## Prepare Data
-#### Download files
--   Sentence piece model [spm.model](https://dl.fbaipublicfiles.com/joint_speech_text_4_s2t/must_c/en_de/spm.model)
--   Dictionary [dict.txt](https://dl.fbaipublicfiles.com/joint_speech_text_4_s2t/must_c/en_de/dict.txt)
--   config [config.yaml](https://dl.fbaipublicfiles.com/joint_speech_text_4_s2t/must_c/en_de/config.yaml)
 #### Prepare MuST-C data set
 -   Please follow the data preparation in the [S2T example](https://github.com/pytorch/fairseq/blob/main/examples/speech_to_text/docs/mustc_example.md)
--   Convert source text under the "src_text" column in the tsv file into phoneme representation.
-```bash
-    python examples/speech_text_joint_to_text/scripts/g2p_encode.py \
-        --lower-case --do-filter --use-word-start --no-punc \
-        --reserve-word examples/speech_text_joint_to_text/configs/mustc_noise.list \
-        --data-path ${must_c_en_de_src_text} \
-        --out-path ${must_c_en_de_src_text_pho}
-```
--   Replace the source text under the "src_text" column in the tsv file with the corresponding phoneme reprentation generated in the step above.
+-   Convert source text to its char representation and place it in the "src_char_text" column of TSV file
+-   Convert source text to its phoneme representation and place it in the "src_text" column of TSV file
+-   Place the source text in the "src_word_text" column of TSV file
+
 Below is the snapshot for the MuST-C en-de dev tsv
 ```
 id  audio   n_frames    tgt_text    src_text    speaker
