@@ -1,4 +1,4 @@
-# DPA
+# PDE
 Improving End-to-End Speech Translation with Progressive Dual-encoding
 
 ## install
